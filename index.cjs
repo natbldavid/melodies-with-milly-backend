@@ -26,7 +26,7 @@ app.post('/contact', async (req, res) => {
   try {
     // Send email to you (business owner)
     await resend.emails.send({
-      from: 'Nat David <natbldavid@gmail.com>',
+      from: 'Emelie Hallett Music <onboarding@resend.dev>',
       to: 'natbldavid@gmail.com', // your receiving email
       subject: 'New Contact Form Submission',
       html: `
@@ -39,7 +39,7 @@ app.post('/contact', async (req, res) => {
 
     // Send auto-reply to the user
     await resend.emails.send({
-      from: 'Nat David <natbldavid@gmail.com>',
+      from: 'Emelie Hallett Music <onboarding@resend.dev>',
       to: email,
       subject: 'We’ve received your enquiry',
       html: `
