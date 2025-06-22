@@ -1,129 +1,73 @@
 // server/index.cjs
-
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { Resend } = require('resend');
 const fetch = require('node-fetch');
+const { Resend } = require('resend');
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 app.use(cors());
 app.use(express.json());
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Verify reCAPTCHA v3 token
+async function verifyCaptcha(token) {
+  const secret = process.env.RECAPTCHA_SECRET;
+  const res = await fetch(`https://www.google.com/recaptcha/api/siteverify`, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/x-www-form-urlencoded' },
+    body: `secret=${secret}&response=${token}`
+  });
+  const json = await res.json();
+  return json.success && json.score > 0.5;
+}
 
-// ---------------------- CONTACT FORM ----------------------
-
+// Contact endpoint
 app.post('/contact', async (req, res) => {
-  const { Name, email, phone, message, recaptchaToken } = req.body;
-
+  const { Name, email, phone, message, captcha } = req.body;
+  if (!await verifyCaptcha(captcha)) return res.status(400).json({ error: 'reCAPTCHA failed' });
   try {
-    // 1. Verify reCAPTCHA
-    const captchaRes = await fetch(`https://www.google.com/recaptcha/api/siteverify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`
-    });
-
-    const captchaJson = await captchaRes.json();
-    if (!captchaJson.success || captchaJson.score < 0.5) {
-      return res.status(403).json({ error: 'Failed reCAPTCHA verification' });
-    }
-
-    // 2. Send internal email
     await resend.emails.send({
-      from: 'Emelie Hallett <noreply@emeliehallett.com>',
-      to: 'maintenanceman@gmail.com',
+      from: 'Emelie Hallett Music <noreply@emeliehallett.com>',
+      to: process.env.RECEIVE_EMAIL,
       subject: 'New Contact Form Submission',
-      html: `
-        <h3>New Contact</h3>
-        <p><strong>Name:</strong> ${Name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
-        <p><strong>Message:</strong><br/>${message}</p>
-      `,
+      html: `<h3>From: ${Name}</h3><p>Email: ${email}</p><p>Phone: ${phone}</p><p>${message}</p>`
     });
-
-    // 3. Send confirmation to user
     await resend.emails.send({
-      from: 'Emelie Hallett <noreply@emeliehallett.com>',
+      from: 'Emelie Hallett Music <noreply@emeliehallett.com>',
       to: email,
-      subject: 'We’ve received your enquiry',
-      html: `
-        <p>Hi ${Name},</p>
-        <p>Thank you for reaching out. We’ve received your enquiry and will respond within 30 working days.</p>
-        <p>— Emelie Hallett Music</p>
-      `,
+      subject: 'Thanks for contacting us',
+      html: `<p>Hi ${Name}, thank you for your enquiry. We will respond within 30 working days.</p>`
     });
-
-    res.status(200).json({ message: 'Contact emails sent successfully' });
-  } catch (error) {
-    console.error('Contact error:', error);
-    res.status(500).json({ error: 'Contact email failed' });
+    res.json({ message: 'Contact emails sent.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Send failed' });
   }
 });
 
-// ---------------------- TESTIMONIALS ----------------------
-
-const testimonials = []; // In-memory store
-
-app.get('/testimonials', (req, res) => {
-  const approved = testimonials.filter(t => t.approved);
-  res.json(approved);
-});
-
+// Testimonials endpoint (moderation)
 app.post('/testimonials', async (req, res) => {
-  const { name, location, review, rating, recaptchaToken } = req.body;
-
+  const { name, location, review, rating, captcha } = req.body;
+  if (!await verifyCaptcha(captcha)) return res.status(400).json({ error: 'reCAPTCHA failed' });
+  const reviewHtml = `<p><strong>${name}</strong> (${location}) rated ${rating} ★<br>${review}</p>`;
   try {
-    // 1. Verify reCAPTCHA
-    const captchaRes = await fetch(`https://www.google.com/recaptcha/api/siteverify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`
+    // Send moderation email
+    await resend.emails.send({
+      from: 'Emelie Hallett Music <noreply@emeliehallett.com>',
+      to: process.env.RECEIVE_EMAIL,
+      subject: 'New Testimonial Needs Approval',
+      html: `${reviewHtml}<p>Approve by visiting: <a href="${process.env.FRONTEND_URL}/approve?name=${encodeURIComponent(name)}&loc=${encodeURIComponent(location)} &rev=${encodeURIComponent(review)}&rating=${rating}">Approve</a></p>`
     });
-
-    const captchaJson = await captchaRes.json();
-    if (!captchaJson.success || captchaJson.score < 0.5) {
-      return res.status(403).json({ error: 'Failed reCAPTCHA verification' });
-    }
-
-    // 2. Create new testimonial
-    const newTestimonial = {
-      text: review,
-      author: `${name}${location ? `, ${location}` : ''}`,
-      rating: Number(rating),
-      createdAt: new Date().toISOString(),
-      approved: process.env.AUTO_APPROVE === 'true',
-    };
-
-    testimonials.unshift(newTestimonial);
-
-    // 3. Notify owner if moderation is on
-    if (!newTestimonial.approved && process.env.OWNER_EMAIL) {
-      await resend.emails.send({
-        from: 'Emelie Hallett <noreply@emeliehallett.com>',
-        to: process.env.OWNER_EMAIL,
-        subject: 'New Testimonial Pending Approval',
-        html: `
-          <h2>New Testimonial</h2>
-          <p><strong>Name:</strong> ${newTestimonial.author}</p>
-          <p><strong>Rating:</strong> ${newTestimonial.rating}</p>
-          <p><strong>Review:</strong> ${newTestimonial.text}</p>
-        `,
-      });
-    }
-
-    res.status(201).json(newTestimonial);
-  } catch (error) {
-    console.error('Testimonial error:', error);
-    res.status(500).json({ error: 'Testimonial failed' });
+    res.json({ message: 'Testimonial submitted for approval.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Submission failed' });
   }
 });
 
-app.get('/', (req, res) => res.send('Backend is live!'));
-
-app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+app.get('/', (req, res) => res.send('Server live!'));
+app.listen(PORT, () => console.log(`Listening on ${PORT}`));
