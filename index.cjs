@@ -89,7 +89,7 @@ app.post('/testimonials', async (req, res) => {
       from: 'Emelie Hallett Music <noreply@emeliehallett.com>',
       to: process.env.RECEIVE_EMAIL,
       subject: 'New Testimonial Needs Approval',
-      html: `${reviewHtml}<p>Approve by visiting: <a href="${process.env.FRONTEND_URL}/approve?name=${encodeURIComponent(name)}&loc=${encodeURIComponent(location)}&rev=${encodeURIComponent(review)}&rating=${rating}">Approve</a></p>`,
+      html: `${reviewHtml}<p>Approve by visiting: <a href="${process.env.FRONTEND_URL}/approve?name=${encodeURIComponent(name)}&loc=${encodeURIComponent(location)}&rev=${encodeURIComponent(review)}&rating=${rating}">Approve</a></p>`
     });
 
     res.json({ message: 'Testimonial submitted for approval.' });
