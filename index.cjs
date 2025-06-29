@@ -10,7 +10,23 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5174', // for local development
+  'https://emelie-hallett-music.vercel.app', // replace with your actual frontend domain if different
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST'],
+  credentials: true,
+}));
+
 app.use(express.json());
 
 // Verify reCAPTCHA v3 token
