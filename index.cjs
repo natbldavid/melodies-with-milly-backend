@@ -51,14 +51,14 @@ app.post('/contact', async (req, res) => {
 
   try {
     await resend.emails.send({
-      from: 'Emelie Hallett Music <noreply@emeliehallett.com>',
+      from: 'Emelie Hallett Music <onboarding@resend.dev>',
       to: process.env.RECEIVE_EMAIL,
       subject: 'New Contact Form Submission',
       html: `<h3>From: ${Name}</h3><p>Email: ${email}</p><p>Phone: ${phone}</p><p>${message}</p>`
     });
 
     await resend.emails.send({
-      from: 'Emelie Hallett Music <noreply@emeliehallett.com>',
+      from: 'Emelie Hallett Music <onboarding@resend.dev>',
       to: email,
       subject: 'Thanks for contacting us',
       html: `<p>Hi ${Name}, thank you for your enquiry. We will respond within 30 working days.</p>`
@@ -82,7 +82,7 @@ app.post('/testimonials', async (req, res) => {
 
   try {
     await resend.emails.send({
-      from: 'Emelie Hallett Music <noreply@emeliehallett.com>',
+      from: 'Emelie Hallett Music <onboarding@resend.dev>',
       to: process.env.RECEIVE_EMAIL,
       subject: 'New Testimonial Received',
       html: `${reviewHtml}`
