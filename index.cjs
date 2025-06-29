@@ -14,6 +14,8 @@ const allowedOrigins = [
   'http://localhost:5174',
   'https://emelie-hallett-music.vercel.app',
   'https://emeliehallettmusic.co.uk', // Production frontend
+  'https://www.emeliehallettmusic.co.uk',
+  'https://emeliehallettmusic.co.uk:443', 
 ];
 
 app.use(cors({
