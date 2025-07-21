@@ -37,8 +37,8 @@ app.post('/contact', async (req, res) => {
   try {
     // Notify yourself of the new enquiry
     await resend.emails.send({
-      from:    'Emelie Hallett <noreply@emeliehallett.com>',
-      to:      'your@business.email',
+      from:    'Melodies With Milly <onboarding@resend.dev>',
+      to:      'natbldavid@gmail.com',
       subject: 'New Party Enquiry',
       html: `
         <h3>Enquiry from ${name}</h3>
