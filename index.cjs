@@ -1,10 +1,10 @@
 // server/index.cjs
 require('dotenv').config();
-const express = require('express');
-const cors    = require('cors');
+const express   = require('express');
+const cors      = require('cors');
 const { Resend } = require('resend');
 
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
@@ -35,15 +35,15 @@ app.post('/contact', async (req, res) => {
   } = req.body;
 
   try {
-    // 1) Notify yourself
+    // Notify yourself of the new enquiry
     await resend.emails.send({
       from:    'Emelie Hallett <noreply@emeliehallett.com>',
-      to:      'your@business.email',         // ← change this
+      to:      'your@business.email',
       subject: 'New Party Enquiry',
       html: `
         <h3>Enquiry from ${name}</h3>
         <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone||'N/A'}</p>
+        <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
         <p><strong>Child:</strong> ${childName} (${childAge})</p>
         <p><strong>Character:</strong> ${character}</p>
         <p><strong>Package:</strong> ${pkg}</p>
@@ -55,25 +55,12 @@ app.post('/contact', async (req, res) => {
       `,
     });
 
-    // 2) Confirmation back to user
-    await resend.emails.send({
-      from:    'Emelie Hallett <noreply@emeliehallett.com>',
-      to:      email,
-      subject: 'Thanks for your enquiry!',
-      html: `
-        <p>Hi ${name},</p>
-        <p>Thanks for reaching out! We’ve received your inquiry and will be in touch soon.</p>
-        <p>— Emelie Hallett Music</p>
-      `,
-    });
-
-    return res.status(200).json({ message: 'Emails sent' });
+    // return success (no user confirmation email)
+    return res.status(200).json({ message: 'Enquiry received' });
   } catch (err) {
     console.error('Send failure:', err);
-    return res.status(500).json({ error: 'Failed to send emails' });
+    return res.status(500).json({ error: 'Failed to send enquiry' });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
