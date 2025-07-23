@@ -67,7 +67,7 @@ app.post('/contact', async (req, res) => {
   // 2) send the enquiry email
   try {
     await resend.emails.send({
-      from:    `Enquiry Bot <${process.env.RECEIVE_EMAIL}>`,
+      from:    `Melodies With Milly <hello@resend.dev>`,
       to:      process.env.RECEIVE_EMAIL,
       subject: 'New Party Enquiry',
       html: `
