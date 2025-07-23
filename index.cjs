@@ -2,28 +2,31 @@
 require('dotenv').config();
 const express   = require('express');
 const cors      = require('cors');
-const fetch     = require('node-fetch');        // if Node<18
+const fetch     = require('node-fetch');
 const { Resend } = require('resend');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
-const allowed = [
-  process.env.FRONTEND_URL,          // e.g. "https://username.github.io"
-  'http://localhost:5173',           // vite’s default dev URL
+//  ─── 1) ENABLE CORS FOR ALL ROUTES & PRELIGHT ────────────────────────────
+// Allow your production origin and localhost in development
+const allowedOrigins = [
+  process.env.FRONTEND_URL,    // e.g. https://username.github.io
+  'http://localhost:5173',     // your Vite dev server
   'http://127.0.0.1:5173',
 ];
 
-app.use(
-  cors({
-    origin: (incomingOrigin, callback) => {
-      // allow requests with no origin (e.g. curl, mobile apps)
-      if (!incomingOrigin) return callback(null, true);
-      if (allowed.includes(incomingOrigin)) return callback(null, true);
-      callback(new Error(`CORS blocked for ${incomingOrigin}`));
-    }
-  })
-);
+// Fully enable CORS (including OPTIONS) on every path:
+app.use(cors({
+  origin: (origin, callback) => {
+    // allow requests with no origin like mobile apps or curl
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS blocked for origin ${origin}`));
+  }
+}));
+app.options('*', cors());      // explicitly handle preflight
+
 app.use(express.json());
 
 const resend = new Resend(process.env.RESEND_API_KEY);
