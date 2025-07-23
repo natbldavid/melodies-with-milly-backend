@@ -8,8 +8,21 @@ const { Resend } = require('resend');
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
+const allowed = [
+  process.env.FRONTEND_URL,          // e.g. "https://username.github.io"
+  'http://localhost:5173',           // vite’s default dev URL
+  'http://127.0.0.1:5173',
+];
+
 app.use(
-  cors({ origin: process.env.FRONTEND_URL })
+  cors({
+    origin: (incomingOrigin, callback) => {
+      // allow requests with no origin (e.g. curl, mobile apps)
+      if (!incomingOrigin) return callback(null, true);
+      if (allowed.includes(incomingOrigin)) return callback(null, true);
+      callback(new Error(`CORS blocked for ${incomingOrigin}`));
+    }
+  })
 );
 app.use(express.json());
 
